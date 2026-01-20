@@ -1,0 +1,45 @@
+version: "3.7"
+
+services:
+  lccd:
+    image: litecoincash/litecoincash:latest
+    container_name: p2pool-lcc_lccd_1
+    restart: unless-stopped
+    stop_grace_period: 15m
+    ports:
+      - "28833:28833"
+    volumes:
+      - ${APP_DATA_DIR}/data/node:/home/litecoincash/.litecoincash
+    command: 
+      - -server=1
+      - -rpcuser=umbrel
+      - -rpcpassword=moneyprintergobrrr
+      - -rpcallowip=0.0.0.0/0
+      - -rpcbind=0.0.0.0
+      - -prune=2000
+
+  p2pool-lcc:
+    image: mtmining/p2pool-litecoincash:latest
+    container_name: p2pool-lcc_p2pool_1
+    restart: unless-stopped
+    depends_on:
+      - lccd
+    ports:
+      - "9338:9338"
+      - "9327:9327"
+    volumes:
+      - ${APP_DATA_DIR}/data/p2pool:/data
+    command: >
+      --host lccd
+      --rpc-user umbrel
+      --rpc-password moneyprintergobrrr
+      --net litecoincash
+
+  app_proxy:
+    image: getumbrel/app-proxy:v0.1.0
+    restart: unless-stopped
+    environment:
+      APP_HOST: p2pool-lcc_p2pool_1
+      APP_PORT: 9327
+    depends_on:
+      - p2pool-lcc
